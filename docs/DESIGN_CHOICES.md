@@ -17,6 +17,7 @@ For this implemented take-home demo, the selected stack is:
 - **Vector store:** LanceDB
 - **Retrieval:** hybrid retrieval with dense vector search plus full-text search
 - **Orchestration:** explicit Python service code instead of LangChain for the first version
+- **Instrumentation:** pipeline timings plus Ollama token/duration stats for local inference analysis
 - **UI:** Streamlit
 
 The core reason is that this stack fits the assignment and the edge AI context: it runs locally, avoids cloud services, has a small operational footprint, supports source-grounded RAG, and is explainable end to end.
@@ -46,6 +47,7 @@ These constraints are why the design favors local serving, embedded storage, exp
 | Vector store | LanceDB | Embedded local database with vector, full-text, and hybrid search | Less familiar than Chroma for many RAG tutorials |
 | Retrieval | Hybrid search | Handles semantic similarity and exact keyword matches | Slightly more setup than dense-only retrieval |
 | Orchestration | Raw Python | Most explainable and easiest to debug | More code than using LangChain/LlamaIndex |
+| Instrumentation | TTFT, tok/s, model timing, estimated throughput | Separates RAG latency from inference latency | FLOP/s is an estimate unless hardware counters are added |
 | UI | Streamlit | Fast Python-native demo UI with chat, upload, sidebar, and streaming support | Not a production frontend |
 
 ## 4. Model Runtime Choice

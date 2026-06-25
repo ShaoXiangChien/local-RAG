@@ -33,6 +33,27 @@ class FakeThinkingLLM(FakeStreamingLLM):
         yield LLMStreamChunk(kind="content", text="answer")
 
 
+class FakeMetricsLLM(FakeStreamingLLM):
+    model = "llama3.2:3b"
+
+    def stream_chat_events(self, messages, options=None):
+        self.messages = messages
+        yield LLMStreamChunk(kind="content", text="Measured ")
+        yield LLMStreamChunk(kind="content", text="answer")
+        yield LLMStreamChunk(
+            kind="metrics",
+            text="",
+            metadata={
+                "total_duration_ns": 2_500_000_000,
+                "load_duration_ns": 100_000_000,
+                "prompt_eval_count": 120,
+                "prompt_eval_duration_ns": 600_000_000,
+                "eval_count": 25,
+                "eval_duration_ns": 1_250_000_000,
+            },
+        )
+
+
 class FakeRewriter:
     def __init__(self):
         self.input_question = None
@@ -186,3 +207,42 @@ def test_chat_service_keeps_thinking_out_of_visible_answer_and_memory(tmp_path) 
         "What about chat?",
         "Final answer",
     ]
+
+
+def test_chat_service_collects_generation_performance_metrics(tmp_path) -> None:
+    memory = ConversationMemoryBuffer(ConversationStore(tmp_path / "app.db"), recent_turns=2)
+    service = ChatService(
+        llm=FakeMetricsLLM(),
+        retriever=FakeRetriever(),
+        query_rewriter=FakeRewriter(),
+        prompt_builder=PromptBuilder(
+            TokenBudgeter(
+                HeuristicTokenCounter(),
+                ContextBudgetConfig(max_working_context_tokens=400, reserved_response_tokens=80),
+            )
+        ),
+        memory_buffer=memory,
+        summarizer=FakeSummarizer(),
+        top_k=4,
+    )
+
+    result = service.ask("session-metrics", "How fast is local inference?")
+    answer = "".join(result.stream)
+
+    metrics = result.performance_metrics
+    assert answer == "Measured answer"
+    assert metrics.model_name == "llama3.2:3b"
+    assert metrics.answer_chunk_count == 2
+    assert metrics.answer_character_count == len("Measured answer")
+    assert metrics.time_to_first_token_ms is not None
+    assert metrics.time_to_first_token_ms >= 0
+    assert metrics.generation_elapsed_ms is not None
+    assert metrics.generation_elapsed_ms >= metrics.time_to_first_token_ms
+    assert metrics.total_turn_elapsed_ms is not None
+    assert metrics.total_turn_elapsed_ms >= metrics.generation_elapsed_ms
+    assert metrics.prompt_eval_count == 120
+    assert metrics.prompt_tokens_per_second == 200.0
+    assert metrics.eval_count == 25
+    assert metrics.output_tokens_per_second == 20.0
+    assert metrics.estimated_model_parameter_count == 3_000_000_000
+    assert metrics.estimated_effective_gflops == 120.0

@@ -4,6 +4,8 @@ from uuid import uuid4
 
 import streamlit as st
 
+from rag_demo.chat.schemas import InferenceMetrics
+
 PIPELINE_STEPS = [
     "memory",
     "query_rewrite",
@@ -113,6 +115,7 @@ def render_chat_page(chat_service, manifest, llm, memory_buffer) -> None:
 
         status.update(label="Local RAG pipeline complete", state="complete", expanded=False)
         st.session_state.chat_messages.append({"role": "assistant", "content": answer})
+        _render_performance_metrics(result.performance_metrics)
         _render_pipeline_trace(pipeline_events)
         _render_debug(result)
         _render_sources(result.sources)
@@ -156,6 +159,93 @@ def _pipeline_rows(events) -> list[dict[str, str]]:
 def _render_pipeline_trace(events) -> None:
     with st.expander("Pipeline trace", expanded=False):
         st.table(_pipeline_rows(events))
+
+
+def _render_performance_metrics(metrics: InferenceMetrics) -> None:
+    st.subheader("Performance metrics")
+    st.table(_performance_metric_rows(metrics))
+    with st.expander("Inference metrics detail", expanded=False):
+        st.table(_performance_detail_rows(metrics))
+        st.caption("Estimated effective throughput is derived, not a hardware-counter measurement.")
+
+
+def _performance_metric_rows(metrics: InferenceMetrics) -> list[dict[str, str]]:
+    return [
+        {"Metric": "TTFT", "Value": _format_ms(metrics.time_to_first_token_ms)},
+        {"Metric": "Output throughput", "Value": _format_tps(metrics.output_tokens_per_second)},
+        {
+            "Metric": "Prompt eval throughput",
+            "Value": _format_tps(metrics.prompt_tokens_per_second),
+        },
+        {"Metric": "Output tokens", "Value": _format_count(metrics.eval_count)},
+        {"Metric": "Generation time", "Value": _format_ms(metrics.generation_elapsed_ms)},
+        {
+            "Metric": "Estimated effective throughput",
+            "Value": _format_gflops(metrics.estimated_effective_gflops),
+        },
+    ]
+
+
+def _performance_detail_rows(metrics: InferenceMetrics) -> list[dict[str, str]]:
+    return [
+        {"Metric": "Model", "Value": metrics.model_name or "n/a"},
+        {"Metric": "Total turn time", "Value": _format_ms(metrics.total_turn_elapsed_ms)},
+        {"Metric": "Ollama total duration", "Value": _format_ns_as_ms(metrics.total_duration_ns)},
+        {"Metric": "Ollama load duration", "Value": _format_ns_as_ms(metrics.load_duration_ns)},
+        {
+            "Metric": "Prompt tokens (app estimate)",
+            "Value": _format_count(metrics.estimated_prompt_tokens),
+        },
+        {"Metric": "Prompt tokens (Ollama)", "Value": _format_count(metrics.prompt_eval_count)},
+        {
+            "Metric": "Prompt eval duration",
+            "Value": _format_ns_as_ms(metrics.prompt_eval_duration_ns),
+        },
+        {"Metric": "Output tokens", "Value": _format_count(metrics.eval_count)},
+        {"Metric": "Eval duration", "Value": _format_ns_as_ms(metrics.eval_duration_ns)},
+        {"Metric": "Answer chunks", "Value": _format_count(metrics.answer_chunk_count)},
+        {"Metric": "Answer characters", "Value": _format_count(metrics.answer_character_count)},
+        {"Metric": "Thinking chunks", "Value": _format_count(metrics.thinking_chunk_count)},
+        {"Metric": "Included sources", "Value": _format_count(metrics.included_source_count)},
+        {
+            "Metric": "Estimated model parameters",
+            "Value": _format_parameter_count(metrics.estimated_model_parameter_count),
+        },
+        {
+            "Metric": "FLOP/s formula",
+            "Value": "output tok/s * 2 * estimated params",
+        },
+    ]
+
+
+def _format_ms(value: int | None) -> str:
+    return "n/a" if value is None else f"{value} ms"
+
+
+def _format_ns_as_ms(value: int | None) -> str:
+    return "n/a" if value is None else f"{round(value / 1_000_000)} ms"
+
+
+def _format_tps(value: float | None) -> str:
+    return "n/a" if value is None else f"{value:.2f} tok/s"
+
+
+def _format_gflops(value: float | None) -> str:
+    return "n/a" if value is None else f"{value:.2f} GFLOP/s"
+
+
+def _format_count(value: int | None) -> str:
+    return "n/a" if value is None else str(value)
+
+
+def _format_parameter_count(value: int | None) -> str:
+    if value is None:
+        return "n/a"
+    if value >= 1_000_000_000:
+        return f"{value / 1_000_000_000:.2f}B"
+    if value >= 1_000_000:
+        return f"{value / 1_000_000:.2f}M"
+    return str(value)
 
 
 def _render_debug(result) -> None:

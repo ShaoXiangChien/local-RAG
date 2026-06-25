@@ -47,6 +47,29 @@ class PromptBuildResult:
     total_prompt_tokens: int
 
 
+@dataclass
+class InferenceMetrics:
+    model_name: str | None = None
+    estimated_prompt_tokens: int | None = None
+    included_source_count: int = 0
+    answer_chunk_count: int = 0
+    thinking_chunk_count: int = 0
+    answer_character_count: int = 0
+    time_to_first_token_ms: int | None = None
+    generation_elapsed_ms: int | None = None
+    total_turn_elapsed_ms: int | None = None
+    total_duration_ns: int | None = None
+    load_duration_ns: int | None = None
+    prompt_eval_count: int | None = None
+    prompt_eval_duration_ns: int | None = None
+    eval_count: int | None = None
+    eval_duration_ns: int | None = None
+    prompt_tokens_per_second: float | None = None
+    output_tokens_per_second: float | None = None
+    estimated_model_parameter_count: int | None = None
+    estimated_effective_gflops: float | None = None
+
+
 @dataclass(frozen=True)
 class ChatAskResult:
     stream: Iterator[str]
@@ -54,4 +77,5 @@ class ChatAskResult:
     rewrite: object
     prompt: PromptBuildResult
     retrieval_query: str
+    performance_metrics: InferenceMetrics = field(default_factory=InferenceMetrics)
     summary_status: dict[str, str] = field(default_factory=dict)

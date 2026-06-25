@@ -9,6 +9,7 @@ from typing import Any, Protocol
 class LLMStreamChunk:
     kind: str
     text: str
+    metadata: dict[str, Any] | None = None
 
 
 class LocalLLMClient(Protocol):

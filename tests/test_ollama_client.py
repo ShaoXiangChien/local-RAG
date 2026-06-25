@@ -165,3 +165,45 @@ def test_ollama_client_adds_qwen_no_think_directive_without_mutating_messages() 
     assert sent_messages[0]["content"] == "/no_think\nAnswer directly."
     assert sent_messages[1]["content"].startswith("/no_think\n")
     assert messages[1]["content"] == "What endpoint should embeddings use?"
+
+
+def test_ollama_client_emits_final_stream_metrics() -> None:
+    class MetricsFakeOllamaClient:
+        def chat(self, **kwargs):
+            return iter(
+                [
+                    {"message": {"content": "Fast answer"}},
+                    {
+                        "done": True,
+                        "total_duration": 2_500_000_000,
+                        "load_duration": 100_000_000,
+                        "prompt_eval_count": 120,
+                        "prompt_eval_duration": 600_000_000,
+                        "eval_count": 25,
+                        "eval_duration": 1_250_000_000,
+                    },
+                ]
+            )
+
+    client = OllamaLLMClient("llama3.2:3b")
+    client._client = MetricsFakeOllamaClient()
+
+    chunks = list(
+        client.stream_chat_events(
+            [{"role": "user", "content": "Explain local inference metrics."}],
+            options={"think": False},
+        )
+    )
+
+    assert [(chunk.kind, chunk.text) for chunk in chunks] == [
+        ("content", "Fast answer"),
+        ("metrics", ""),
+    ]
+    assert chunks[-1].metadata == {
+        "total_duration_ns": 2_500_000_000,
+        "load_duration_ns": 100_000_000,
+        "prompt_eval_count": 120,
+        "prompt_eval_duration_ns": 600_000_000,
+        "eval_count": 25,
+        "eval_duration_ns": 1_250_000_000,
+    }

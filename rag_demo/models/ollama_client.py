@@ -7,6 +7,14 @@ from typing import Any
 from rag_demo.models.base import LLMStreamChunk
 
 NO_THINK_DIRECTIVE = "/no_think"
+OLLAMA_STREAM_METRIC_FIELDS = {
+    "total_duration": "total_duration_ns",
+    "load_duration": "load_duration_ns",
+    "prompt_eval_count": "prompt_eval_count",
+    "prompt_eval_duration": "prompt_eval_duration_ns",
+    "eval_count": "eval_count",
+    "eval_duration": "eval_duration_ns",
+}
 
 
 class OllamaLLMClient:
@@ -105,6 +113,9 @@ class OllamaLLMClient:
             if content:
                 for visible in content_filter.feed(content):
                     yield LLMStreamChunk(kind="content", text=visible)
+            metrics = _stream_metrics(chunk)
+            if metrics:
+                yield LLMStreamChunk(kind="metrics", text="", metadata=metrics)
         trailing = content_filter.flush()
         if trailing:
             yield LLMStreamChunk(kind="content", text=trailing)
@@ -180,6 +191,23 @@ def _message_thinking(response: Any) -> str:
     if message is not None:
         return str(getattr(message, "thinking", "") or "")
     return ""
+
+
+def _stream_metrics(response: Any) -> dict[str, int]:
+    metrics: dict[str, int] = {}
+    for source_key, target_key in OLLAMA_STREAM_METRIC_FIELDS.items():
+        value = _response_value(response, source_key)
+        if isinstance(value, bool) or value is None:
+            continue
+        if isinstance(value, (int, float)):
+            metrics[target_key] = int(value)
+    return metrics
+
+
+def _response_value(response: Any, key: str) -> Any:
+    if isinstance(response, dict):
+        return response.get(key)
+    return getattr(response, key, None)
 
 
 def _should_strip_raw_thinking(model: str, think: Any) -> bool:

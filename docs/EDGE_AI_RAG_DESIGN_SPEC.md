@@ -18,6 +18,7 @@ Current stack in the implemented prototype:
 - **Retrieval strategy:** hybrid search with dense vector retrieval plus full-text retrieval
 - **Conversation strategy:** query rewrite plus running chat-history summary
 - **Chat orchestration:** raw Python service code, not LangChain for the first version
+- **Instrumentation:** pipeline stage timings plus Ollama final stream stats for TTFT and token throughput
 
 The main design principle is explainability. The assignment explicitly values clean organization and the ability to explain every design decision, so the system should avoid framework magic unless it saves meaningful time without hiding the core flow.
 
@@ -32,6 +33,7 @@ The main design principle is explainability. The assignment explicitly values cl
 - Generate answers with a local LLM.
 - Stream generated output in the UI.
 - Show source chunks used for each answer.
+- Report local inference metrics such as TTFT, prompt/output tokens per second, and estimated effective throughput.
 - Enforce an application-level 6,000-token working-context budget.
 - Keep the architecture clean enough to explain in a demo.
 

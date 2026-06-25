@@ -1,6 +1,6 @@
 # Edge AI Local RAG Chat Demo
 
-Local-only Python RAG demo for the HP edge AI take-home assignment. The app ingests Markdown and text files, chunks them, embeds chunks with a local Ollama embedding model, stores retrieval metadata locally, retrieves source chunks, rewrites follow-up questions, enforces a 6,000-token working-context budget, and streams grounded answers through Streamlit.
+Local-only Python RAG demo for the HP edge AI take-home assignment. The app ingests Markdown and text files, chunks them, embeds chunks with a local Ollama embedding model, stores retrieval metadata locally, retrieves source chunks, rewrites follow-up questions, enforces a 6,000-token working-context budget, streams grounded answers through Streamlit, and reports local inference metrics such as TTFT, prompt/output tokens per second, and estimated effective throughput.
 
 ## Architecture
 
@@ -11,6 +11,7 @@ Local-only Python RAG demo for the HP edge AI take-home assignment. The app inge
 - Vector store: LanceDB under `data/index`
 - Manifest and conversation summaries: SQLite at `data/app.db`
 - Orchestration: explicit Python services in `rag_demo/`
+- Instrumentation: pipeline timing plus Ollama stream metrics for local inference
 
 No cloud LLM, cloud embedding, or hosted vector service is used.
 
@@ -147,7 +148,7 @@ Then ask a follow-up:
 For a larger demo set, index the files in `demo_docs/` and use
 `demo_docs/sample_questions.md` as the question bank.
 
-The live pipeline panel shows memory loading, query rewriting, retrieval, prompt building, answer generation, memory updates, and summary refresh timings. The debug expander shows the rewritten retrieval query, estimated prompt tokens, dropped sources, and retrieved source chunks.
+The live pipeline panel shows memory loading, query rewriting, retrieval, prompt building, answer generation, memory updates, and summary refresh timings. The performance metrics section reports TTFT, prompt eval throughput, output throughput, output token count, generation time, and estimated effective GFLOP/s. The GFLOP/s value is derived from output tokens/sec and estimated model parameters; it is not a hardware-counter measurement. The debug expander shows the rewritten retrieval query, estimated prompt tokens, dropped sources, and retrieved source chunks.
 
 ## Verification
 
@@ -167,5 +168,5 @@ Current automated coverage includes loader validation, chunking, document manife
 - `rag_demo/retrieval/store.py` wraps LanceDB, attempts hybrid vector/full-text retrieval, and falls back to dense retrieval.
 - `rag_demo/chat/token_budget.py` enforces the 6,000-token working-context budget before generation.
 - `rag_demo/chat/service.py` is the explicit RAG orchestration path: memory, rewrite, retrieve, prompt, stream, summarize.
+- `rag_demo/chat/service.py` also aggregates TTFT, Ollama token counts, token throughput, and estimated effective throughput for edge-runtime discussion.
 - `rag_demo/ui/` keeps Streamlit rendering separate from the RAG logic.
-
