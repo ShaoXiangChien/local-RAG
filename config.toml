@@ -1,0 +1,45 @@
+[paths]
+upload_dir = "data/uploads"
+index_dir = "data/index"
+manifest_db = "data/app.db"
+
+[models]
+llm_provider = "ollama"
+llm_model = "llama3.2:3b"
+embedding_provider = "ollama"
+embedding_model = "embeddinggemma"
+ollama_host = "http://localhost:11434"
+
+[generation]
+num_ctx = 6144
+num_predict = 512
+temperature = 0.2
+top_p = 0.9
+think = false
+
+[retrieval]
+vector_store = "lancedb"
+mode = "hybrid"
+top_k = 4
+chunk_token_size = 450
+chunk_token_overlap = 70
+full_text_index = true
+
+[query_rewrite]
+enabled = true
+fallback_to_original_query = true
+
+[memory]
+enabled = true
+summary_token_budget = 600
+recent_turns = 2
+update_after_each_answer = true
+
+[context_budget]
+max_working_context_tokens = 6000
+reserved_response_tokens = 800
+reserved_system_tokens = 300
+reserved_memory_summary_tokens = 600
+reserved_recent_turn_tokens = 500
+reserved_query_tokens = 350
+safety_margin_tokens = 50

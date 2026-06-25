@@ -1,0 +1,14 @@
+Local RAG demo lifecycle:
+
+1. The user uploads Markdown or plain text files.
+2. The loader validates the file type and decodes the content as UTF-8.
+3. The chunker creates overlapping chunks with source offsets.
+4. The embedder sends chunks to a local Ollama embedding model.
+5. LanceDB stores chunk text, embeddings, document IDs, filenames, and metadata.
+6. The chat service rewrites the latest question into a standalone retrieval query.
+7. The retriever embeds the rewritten query and searches LanceDB.
+8. The prompt builder packs source chunks under the 6k context budget.
+9. The local LLM streams a grounded answer.
+10. The UI shows source chunks below the answer.
+
+Deleting a document marks it deleted in SQLite and removes matching chunks from the vector store.

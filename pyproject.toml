@@ -1,0 +1,25 @@
+[project]
+name = "edge-ai-local-rag"
+version = "0.1.0"
+description = "Local-only Streamlit RAG chat demo for edge AI take-home assignment."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "lancedb>=0.25.0",
+  "ollama>=0.6.0",
+  "pandas>=2.2.0",
+  "pyarrow>=16.0.0",
+  "streamlit>=1.36.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100

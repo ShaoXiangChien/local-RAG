@@ -1,0 +1,48 @@
+# OS and editor files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.vscode/
+.idea/
+
+# Python environments and caches
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyre/
+.coverage
+coverage.xml
+htmlcov/
+
+# Build/package outputs
+build/
+dist/
+*.egg-info/
+
+# Local app runtime data
+data/*
+!data/.gitkeep
+*.db
+*.sqlite
+*.sqlite3
+
+# Local secrets and machine-specific settings
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+*.log
+
+# Private planning notes that should stay off the shared interview repo
+docs/superpowers/
+docs/private/
+docs/PROJECT_PRESENTATION_PLAN.md
